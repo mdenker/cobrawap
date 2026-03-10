@@ -15,6 +15,7 @@ sys.path.append(PIPELINE_DIR)
 
 import background_subtraction
 
+# Helper functions
 def create_mock_data(path):
     # Create a simple neo block with an analogsignal
     ch_count = 4
@@ -40,7 +41,9 @@ def create_mock_data(path):
     writer.close()
     return data
 
-def test_background_subtraction_import(tmp_path):
+# Function tests
+
+def test_background_subtraction_shape_frame(tmp_path):
     # Test (ii): direct import and function test
     xy_coords = np.array([[0,0], [1,0], [0,1], [1,1]])
     values = np.array([1, 2, 3, 4])
@@ -51,6 +54,8 @@ def test_background_subtraction_import(tmp_path):
     assert frame[0, 1] == 2
     assert frame[1, 0] == 3
     assert frame[1, 1] == 4
+
+# CLI tests
 
 def test_background_subtraction_cli(tmp_path):
     # Test (i): command line call
