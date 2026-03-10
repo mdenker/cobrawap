@@ -1,4 +1,4 @@
-name: Pytest
+name: test
 
 on:
   push:
@@ -26,5 +26,6 @@ jobs:
         pip install pytest quantities
     - name: Run tests
       run: |
+        # TODO: Remove if tox.ini is gone
         # Override addopts from tox.ini to avoid missing plugin errors
         pytest -o "addopts=" cobrawap/test/
