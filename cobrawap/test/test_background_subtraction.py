@@ -44,9 +44,12 @@ def create_mock_data(path):
 # Function tests
 
 def test_background_subtraction_shape_frame(tmp_path):
-    # Test (ii): direct import and function test
+    # Build a small test array
+    # For the resulting matrix, dim 1 is the x-axis, dim 2 is the y-axis
+    # (i.e., the order is reversed from Python indexing)
     xy_coords = np.array([[0,0], [1,0], [0,1], [1,1]])
     values = np.array([1, 2, 3, 4])
+
     frame = background_subtraction.shape_frame(values, xy_coords)
     
     assert frame.shape == (2, 2)
@@ -61,7 +64,9 @@ def test_background_subtraction_cli(tmp_path):
     # Test (i): command line call
     input_file = tmp_path / "input.nix"
     output_file = tmp_path / "output.nix"
-    
+    output_file_image = tmp_path / "output.png"
+    output_file_array = tmp_path / "output.npy"
+
     original_data = create_mock_data(input_file)
     
     # Call the script
@@ -75,24 +80,45 @@ def test_background_subtraction_cli(tmp_path):
         sys.executable,
         str(script_path),
         "--data", str(input_file),
-        "--output", str(output_file)
+        "--output", str(output_file),
+        "--output_img", str(output_file_image),
+        "--output_array", str(output_file_array),
     ]
-    
+
+    # Run script check successful execution
     result = subprocess.run(cmd, capture_output=True, text=True, env=env)
     assert result.returncode == 0, f"Script failed with error: {result.stderr}"
-    
-    # Verify output
+
+    # Verify output neo file
     reader = neo.io.get_io(str(output_file))
     block = reader.read_block()
     reader.close()
-    
+
     new_asig = block.segments[0].analogsignals[0]
     processed_data = new_asig.as_array()
-    
+
     # Check that mean was subtracted
     # original_data has means approx [1, 2, 3, 4]
-    # processed_data should have means approx 0
+    # processed_data should have means close to 0
     np.testing.assert_allclose(np.nanmean(processed_data, axis=0), 0, atol=1e-7)
-    
+
     # Check if description was updated
     assert "The mean of each channel was subtracted" in new_asig.description
+
+    # Check output image was created
+    assert output_file_image.exists()
+    assert output_file_image.stat().st_size > 0
+
+    # Check output array file was created and contains the expected background frame
+    assert output_file_array.exists()
+
+    saved_frame = np.load(output_file_array)
+
+    # Build expectation from scratch (without shape_frame())
+    expected_background = np.nanmean(original_data, axis=0)
+    expected_xy_coords = np.column_stack(
+        (np.arange(original_data.shape[1]), np.zeros(original_data.shape[1], dtype=int))
+    )
+    expected_frame = background_subtraction.shape_frame(expected_background, expected_xy_coords)
+
+    np.testing.assert_allclose(saved_frame, expected_frame, atol=1e-7)
