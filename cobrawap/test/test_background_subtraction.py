@@ -61,7 +61,7 @@ def test_background_subtraction_shape_frame(tmp_path):
 # CLI tests
 
 def test_background_subtraction_cli(tmp_path):
-    # Test (i): command line call
+    # Perform a run of the script using example data and check the output files
     input_file = tmp_path / "input.nix"
     output_file = tmp_path / "output.nix"
     output_file_image = tmp_path / "output.png"
